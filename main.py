@@ -7,9 +7,9 @@ import uuid
 from .baseScript import Script
 from datetime import datetime,timedelta
 import os
+import shutil
 
-
-active_scripts = []
+active_scripts = {}
 
 # 2. Define the Background Task
 def runner():
@@ -17,7 +17,7 @@ def runner():
     while True:
         # print("--- Ticking ---")
         
-        for script in active_scripts:
+        for script in active_scripts.copy().values():
             
             if script.lastCall == None or (script.isactive and  datetime.now() - script.lastCall >= script.delta):
                 script.call()
@@ -46,10 +46,16 @@ app = FastAPI(lifespan=lifespan)
 def read_root():
     return {"status": "running"}
 
-@app.get("/script")
+@app.get("/script/")
 def add_message():
-    return {"status": "got", "list": active_scripts}
+    return active_scripts
 
+@app.get("/script/{script_id}")
+def add_message(script_id: uuid.UUID):
+    if script_id in active_scripts.keys():
+        return active_scripts[script_id]
+    else:
+        raise HTTPException(status_code=404, detail="Script not found")
 
 @app.post("/script")
 def add_Script(ScriptData: NewScript):
@@ -69,25 +75,16 @@ def add_Script(ScriptData: NewScript):
            pyFile.write(ScriptData.triggerCode)
         
     
-    active_scripts.append(Script(id,ScriptData))
-
-    
+    active_scripts[id] = Script(id,ScriptData)
 
     return id
 
 
 
-# @app.delete("/word")
-# def remove_message(message: Message):
-#     """Removes the first occurrence of the string from the list."""
-#     if message.text in active_messages:
-#         active_messages.remove(message.text)
-#         return {"status": "removed", "message": message.text, "list": active_messages}
-#     else:
-#         raise HTTPException(status_code=404, detail="String not found in list")
-
-# @app.delete("/")
-# def clear_all():
-#     """Clears all messages, reverting to printing 'hi'."""
-#     active_messages.clear()
-#     return {"status": "cleared", "list": active_messages}
+@app.delete("/script/{script_id}")
+def remove_message(script_id: uuid.UUID):
+    if script_id in active_scripts.keys():
+        shutil.rmtree(f"./scripts/{script_id}/")
+        return active_scripts.pop(script_id)
+    else:
+        raise HTTPException(status_code=404, detail="Script not found")

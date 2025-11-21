@@ -7,10 +7,12 @@ class NewScript(BaseModel):
     description: str = ""
     active : bool = True
 
-    mainCode : str
-    triggerCode : str = ""
+    triggerCode : str = "def trigger(data):\n\treturn True"
+    mainCode : str = "def main(data):\n\tprint(\"default\")"
 
 
     firstCall : datetime = datetime.now()
     delta: timedelta = timedelta(seconds=5)
     forceRun: bool = False
+
+
