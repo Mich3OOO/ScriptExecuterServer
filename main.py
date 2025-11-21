@@ -2,38 +2,38 @@ import threading
 import time
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from contextlib import asynccontextmanager
-from pydantic import BaseModel
+from .requests import NewScript
+import uuid
+from .baseScript import Script
+from datetime import datetime,timedelta
+import os
 
 
-active_messages = []
+active_scripts = []
 
 # 2. Define the Background Task
-def printer_loop():
-    """
-    Runs in the background. Checks the message list every 60 seconds.
-    """
+def runner():
+    
     while True:
-        print("--- Ticking ---")
+        # print("--- Ticking ---")
         
-        if not active_messages:
-            # Default behavior if list is empty
-            print("hi")
-        else:
-            # Print all active messages in order
-            for msg in active_messages:
-                print(msg)
+        for script in active_scripts:
+            
+            if script.lastCall == None or (script.isactive and  datetime.now() - script.lastCall >= script.delta):
+                script.call()
+
+        # time.sleep(5)
+
+
         
-        # Wait for 60 seconds
-        time.sleep(5)
 
 # 3. Start the Background Thread on App Startup
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # daemon=True ensures this thread dies when the main server is stopped
-    printer_thread = threading.Thread(target=printer_loop, daemon=True)
-    printer_thread.start()
+    runner_thread = threading.Thread(target=runner, daemon=True)
+    runner_thread.start()
     yield
 
 
@@ -41,28 +41,40 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 
-# 4. Define Data Models for the API
-class Message(BaseModel):
-    text: str
-
-
 # 5. Define API Endpoints
 @app.get("/")
 def read_root():
-    return {"status": "running", "current_messages": active_messages}
+    return {"status": "running"}
 
-# @app.get("/word")
-# def add_message():
-#     """Adds a string to the print list."""
-#     return {"status": "got", "list": active_messages}
+@app.get("/script")
+def add_message():
+    return {"status": "got", "list": active_scripts}
 
 
 @app.post("/script")
-def add_Script(uploaded_file: UploadFile = File(...)):
-    file_location = f"./scripts/{uploaded_file.filename}"
-    with open(file_location, "wb+") as file_object:
-        file_object.write(uploaded_file.file.read())
-    return {"Result": "OK"}
+def add_Script(ScriptData: NewScript):
+
+    id = uuid.uuid4()
+
+    
+    os.makedirs(os.path.dirname(f"./scripts/{id}/"))
+
+    with open(f"./scripts/{id}/main.py","w+") as pyFile:
+        pyFile.write(ScriptData.mainCode)
+
+    open(f"./scripts/{id}/__init__.py","w+").close()
+
+    if ScriptData.triggerCode != None and ScriptData.triggerCode != "":
+        with open(f"./scripts/{id}/trigger.py","w+") as pyFile:
+           pyFile.write(ScriptData.triggerCode)
+        
+    
+    active_scripts.append(Script(id,ScriptData))
+
+    
+
+    return id
+
 
 
 # @app.delete("/word")
