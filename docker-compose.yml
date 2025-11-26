@@ -1,0 +1,11 @@
+services:
+
+  back:
+    build: ./src/api/
+    ports: 
+      - "8000:8000"
+
+  front:
+    build: ./src/client
+    ports: 
+      - "80:80"

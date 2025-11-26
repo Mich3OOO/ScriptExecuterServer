@@ -67,15 +67,15 @@ def add_Script(ScriptData: NewScript):
     id = uuid.uuid4()
 
     
-    os.makedirs(os.path.dirname(f"./src/api/scripts/{id}/"))
+    os.makedirs(os.path.dirname(f"./scripts/{id}/"))
 
-    with open(f"./src/api/scripts/{id}/main.py","w+") as pyFile:
+    with open(f"./scripts/{id}/main.py","w+") as pyFile:
         pyFile.write(ScriptData.mainCode)
 
-    open(f"./src/api/scripts/{id}/__init__.py","w+").close()
+    open(f"./scripts/{id}/__init__.py","w+").close()
 
     if ScriptData.triggerCode != None and ScriptData.triggerCode != "":
-        with open(f"./src/api/scripts/{id}/trigger.py","w+") as pyFile:
+        with open(f"./scripts/{id}/trigger.py","w+") as pyFile:
            pyFile.write(ScriptData.triggerCode)
         
     
@@ -88,7 +88,7 @@ def add_Script(ScriptData: NewScript):
 @app.delete("/script/{script_id}")
 def remove_script(script_id: uuid.UUID):
     if script_id in active_scripts.keys():
-        shutil.rmtree(f"./src/api/scripts/{script_id}/")
+        shutil.rmtree(f"./scripts/{script_id}/")
         return active_scripts.pop(script_id)
     else:
         raise HTTPException(status_code=404, detail="Script not found")
