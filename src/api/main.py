@@ -8,10 +8,11 @@ from .baseScript import Script
 from datetime import datetime,timedelta
 import os
 import shutil
+from fastapi.middleware.cors import CORSMiddleware
 
 active_scripts = {}
 
-# 2. Define the Background Task
+
 def runner():
     
     while True:
@@ -25,10 +26,6 @@ def runner():
         # time.sleep(5)
 
 
-        
-
-# 3. Start the Background Thread on App Startup
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -37,21 +34,28 @@ async def lifespan(app: FastAPI):
     yield
 
 
-# 1. Initialize the App and State
+
 app = FastAPI(lifespan=lifespan)
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-# 5. Define API Endpoints
+
 @app.get("/")
 def read_root():
     return {"status": "running"}
 
-@app.get("/script/")
-def add_message():
-    return active_scripts
+@app.get("/scripts/")
+def getScripts():
+    return [val for val in active_scripts.values()]
 
 @app.get("/script/{script_id}")
-def add_message(script_id: uuid.UUID):
+def getScript(script_id: uuid.UUID):
     if script_id in active_scripts.keys():
         return active_scripts[script_id]
     else:
@@ -63,15 +67,15 @@ def add_Script(ScriptData: NewScript):
     id = uuid.uuid4()
 
     
-    os.makedirs(os.path.dirname(f"./scripts/{id}/"))
+    os.makedirs(os.path.dirname(f"./src/api/scripts/{id}/"))
 
-    with open(f"./scripts/{id}/main.py","w+") as pyFile:
+    with open(f"./src/api/scripts/{id}/main.py","w+") as pyFile:
         pyFile.write(ScriptData.mainCode)
 
-    open(f"./scripts/{id}/__init__.py","w+").close()
+    open(f"./src/api/scripts/{id}/__init__.py","w+").close()
 
     if ScriptData.triggerCode != None and ScriptData.triggerCode != "":
-        with open(f"./scripts/{id}/trigger.py","w+") as pyFile:
+        with open(f"./src/api/scripts/{id}/trigger.py","w+") as pyFile:
            pyFile.write(ScriptData.triggerCode)
         
     
@@ -82,9 +86,9 @@ def add_Script(ScriptData: NewScript):
 
 
 @app.delete("/script/{script_id}")
-def remove_message(script_id: uuid.UUID):
+def remove_script(script_id: uuid.UUID):
     if script_id in active_scripts.keys():
-        shutil.rmtree(f"./scripts/{script_id}/")
+        shutil.rmtree(f"./src/api/scripts/{script_id}/")
         return active_scripts.pop(script_id)
     else:
         raise HTTPException(status_code=404, detail="Script not found")

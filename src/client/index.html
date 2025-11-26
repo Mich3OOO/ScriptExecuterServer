@@ -1,1 +1,36 @@
-<h1>hi</h1>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>API Dashboard</h1>
+        <div class="card">
+            <h2>Current Scripts</h2>
+            <div id="current-scripts"></div>
+            <button type="submit" id="reload-button">reload</button>
+        </div>
+        <div class="card">
+            <h2>Create New Script</h2>
+            <form id="new-script-form">
+                <label for="name">Script Name:</label>
+                <input type="text" id="name" name="name" required>
+                
+                <label for="triggerCode">Trigger Code:</label>
+                <input type="file" id="triggerCode" name="triggerCode" accept=".py" required>
+
+                <label for="mainCode">Main Code:</label>
+                <input type="file" id="mainCode" name="mainCode" accept=".py" required>
+
+
+                <button type="submit">Create Script</button>
+            </form>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
