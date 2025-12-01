@@ -9,6 +9,7 @@ from datetime import datetime,timedelta
 import os
 import shutil
 from fastapi.middleware.cors import CORSMiddleware
+import pickle as plk
 
 active_scripts = {}
 
@@ -29,6 +30,8 @@ def runner():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    global active_scripts
+    active_scripts = getScriptsData()
     runner_thread = threading.Thread(target=runner, daemon=True)
     runner_thread.start()
     yield
@@ -81,14 +84,29 @@ def add_Script(ScriptData: NewScript):
     
     active_scripts[id] = Script(id,ScriptData)
 
+    saveScriptsData()
     return id
-
 
 
 @app.delete("/script/{script_id}")
 def remove_script(script_id: uuid.UUID):
     if script_id in active_scripts.keys():
         shutil.rmtree(f"./scripts/{script_id}/")
-        return active_scripts.pop(script_id)
+        deletedItem = active_scripts.pop(script_id)
+        saveScriptsData()
+        return deletedItem
     else:
         raise HTTPException(status_code=404, detail="Script not found")
+
+def saveScriptsData():
+    with open("./scripts/runningScripts","wb+") as pickleFile:
+        plk.dump(active_scripts,pickleFile)
+
+
+def getScriptsData():
+    r = {}
+    if os.path.isfile("./scripts/runningScripts"):
+        with open("./scripts/runningScripts","rb+") as pickleFile:
+            r = plk.load(pickleFile)
+            print("loaded")
+    return r

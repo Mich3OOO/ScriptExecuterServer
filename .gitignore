@@ -2,3 +2,4 @@
 !/src/api/scripts/__init__.py
 /src/api/__pycache__
 .vscode/*
+/data/
